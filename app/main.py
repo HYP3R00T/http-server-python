@@ -49,11 +49,17 @@ def handle_client(connection, address):
 
             elif req.path.startswith("/echo/"):
                 arg = re_extract(req.path, r"/echo/(.*)")
-                print(arg)
-                print(req.header)
-                if req.header.get("Accept-Encoding", "") == "gzip":
+                if (
+                    "Accept-Encoding" in req.header.keys()
+                    and req.header.get("Accept-Encoding", "") == "gzip"
+                ):
                     resp = f"HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
-                elif req.header.get("Accept-Encoding", "") == "invalid-encoding":
+                elif (
+                    "Accept-Encoding" in req.header.keys()
+                    and req.header.get("Accept-Encoding", "") == "invalid-encoding"
+                ):
+                    resp = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
+                else:
                     resp = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
 
             elif req.path.startswith("/user-agent"):
