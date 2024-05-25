@@ -1,8 +1,8 @@
-# Uncomment this to pass the first stage
 import socket
 from typing import ByteString
 import re
 import threading
+import sys
 
 
 def re_extract(s, pattern):
@@ -38,16 +38,33 @@ def handle_client(connection, address):
 
         try:
             resp = ""
+
             if req.path == "/":
                 resp = "HTTP/1.1 200 OK\r\n\r\n"
+
             elif req.path.startswith("/echo/"):
                 arg = re_extract(req.path, r"/echo/(.*)")
                 resp = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
+
             elif req.path.startswith("/user-agent"):
                 arg = req.header.get("User-Agent", "")
                 resp = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
+
+            elif req.path.startswith("/files"):
+                directory = sys.argv[2]
+                arg = re_extract(req.path, r"/files/(.*)")
+
+                try:
+                    with open(f"{directory}/{arg}", "r") as f:
+                        body = f.read()
+                    resp = f"HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {len(body)}\r\n\r\n{body}"
+
+                except Exception:
+                    raise Exception("Not Found")
+
             else:
                 raise Exception("Not Found")
+
         except Exception:
             resp = "HTTP/1.1 404 Not Found\r\n\r\n"
 
