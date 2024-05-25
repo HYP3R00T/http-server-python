@@ -49,16 +49,12 @@ def handle_client(connection, address):
 
             elif req.path.startswith("/echo/"):
                 arg = re_extract(req.path, r"/echo/(.*)")
+                supported_encodings = ["gzip"]
                 if (
                     "Accept-Encoding" in req.header.keys()
-                    and req.header.get("Accept-Encoding", "") == "gzip"
+                    and req.header.get("Accept-Encoding", "") in supported_encodings
                 ):
                     resp = f"HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
-                elif (
-                    "Accept-Encoding" in req.header.keys()
-                    and req.header.get("Accept-Encoding", "") == "invalid-encoding"
-                ):
-                    resp = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
                 else:
                     resp = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
 
