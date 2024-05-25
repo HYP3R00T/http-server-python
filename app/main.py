@@ -1,5 +1,4 @@
 import socket
-from typing import ByteString
 import re
 import threading
 import sys
@@ -12,7 +11,7 @@ def re_extract(s, pattern):
 
 
 class Request:
-    def __init__(self, data: ByteString):
+    def __init__(self, data):
         data_str = data.decode()
         lines = data_str.split("\r\n")
 
@@ -27,6 +26,9 @@ class Request:
                 parts = line.split(":", 1)
                 if parts[0] == "User-Agent":
                     self.header[parts[0]] = parts[1].strip()
+
+        # Body
+        self.body = lines[-1]
 
 
 def handle_client(connection, address):
@@ -52,15 +54,26 @@ def handle_client(connection, address):
 
             elif req.path.startswith("/files"):
                 directory = sys.argv[2]
-                arg = re_extract(req.path, r"/files/(.*)")
+                file_name = re_extract(req.path, r"/files/(.*)")
 
-                try:
-                    with open(f"{directory}/{arg}", "r") as f:
-                        body = f.read()
-                    resp = f"HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {len(body)}\r\n\r\n{body}"
+                if req.method == "GET":
+                    try:
+                        with open(f"{directory}/{file_name}", "r") as f:
+                            body = f.read()
+                        resp = f"HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {len(body)}\r\n\r\n{body}"
 
-                except Exception:
-                    raise Exception("Not Found")
+                    except Exception:
+                        raise Exception("Not Found")
+                elif req.method == "POST":
+                    try:
+                        with open(f"{directory}/{file_name}", "w") as f:
+                            print(req.body)
+                            f.write(req.body)
+
+                        resp = f"HTTP/1.1 201 Created\r\nContent-Type: text/plain\r\nContent-Length: {len(req.body)}\r\n\r\n{req.body}"
+
+                    except Exception:
+                        raise Exception("Not Found")
 
             else:
                 raise Exception("Not Found")
