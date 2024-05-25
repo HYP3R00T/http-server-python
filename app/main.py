@@ -55,6 +55,7 @@ def handle_client(connection, address):
                         i.strip()
                         for i in req.header.get("Accept-Encoding", "").split(",")
                     ]
+                    resp = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
                     for item in encoding_recv:
                         if item in supported_encodings:
                             resp = f"HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
