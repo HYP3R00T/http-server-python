@@ -2,6 +2,7 @@
 import socket
 from typing import ByteString
 import re
+import threading
 
 
 def re_extract(s, pattern):
@@ -28,6 +29,31 @@ class Request:
                     self.header[parts[0]] = parts[1].strip()
 
 
+def handle_client(connection, address):
+    with connection:
+        print(f"Accecpted connection from {address}")
+        data = connection.recv(1024)
+        print(data.decode())
+        req = Request(data)
+
+        try:
+            resp = ""
+            if req.path == "/":
+                resp = "HTTP/1.1 200 OK\r\n\r\n"
+            elif req.path.startswith("/echo/"):
+                arg = re_extract(req.path, r"/echo/(.*)")
+                resp = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
+            elif req.path.startswith("/user-agent"):
+                arg = req.header.get("User-Agent", "")
+                resp = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
+            else:
+                raise Exception("Not Found")
+        except Exception:
+            resp = "HTTP/1.1 404 Not Found\r\n\r\n"
+
+        connection.sendall(resp.encode())
+
+
 def main():
     print("Logs from your program will appear here!\n")
     server_socket = socket.create_server(("localhost", 4221), reuse_port=True)
@@ -35,30 +61,10 @@ def main():
     while True:
         try:
             connection, address = server_socket.accept()
-
-            with connection:
-                print(f"Accecpted connection from {address}")
-                data = connection.recv(1024)
-                print(data.decode())
-                req = Request(data)
-
-                try:
-                    resp = ""
-                    if req.path == "/":
-                        resp = "HTTP/1.1 200 OK\r\n\r\n"
-                    elif req.path.startswith("/echo/"):
-                        arg = re_extract(req.path, r"/echo/(.*)")
-                        resp = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
-                    elif req.path.startswith("/user-agent"):
-                        arg = req.header.get("User-Agent", "")
-                        resp = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
-                    else:
-                        raise Exception("Not Found")
-                except Exception:
-                    resp = "HTTP/1.1 404 Not Found\r\n\r\n"
-
-                connection.sendall(resp.encode())
-
+            client_thread = threading.Thread(
+                target=handle_client, args=(connection, address)
+            )
+            client_thread.start()
         except Exception as e:
             print(f"Exception: {e}")
 
