@@ -12,7 +12,7 @@ def main():
     connection, address = server_socket.accept()
     print(f"Accecpted connection from {address}")
     data = connection.recv(1024)
-    connection.sendall(b"HTTP/1.1 200 OK \r\n\r\n")
+    connection.sendall(b"HTTP/1.1 200 OK\r\n\r\n")
 
 
 if __name__ == "__main__":
