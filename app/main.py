@@ -1,8 +1,8 @@
-import socket
-import re
 import threading
-import sys
+import socket
 import gzip
+import sys
+import re
 
 
 def re_extract(s, pattern):
