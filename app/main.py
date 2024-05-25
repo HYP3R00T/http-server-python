@@ -2,6 +2,7 @@ import socket
 import re
 import threading
 import sys
+import gzip
 
 
 def re_extract(s, pattern):
@@ -49,7 +50,8 @@ def handle_client(connection, address):
 
             elif req.path.startswith("/echo/"):
                 arg = re_extract(req.path, r"/echo/(.*)")
-                supported_encodings = ["gzip"]
+                arg = gzip.compress(arg.encode())
+
                 if "Accept-Encoding" in req.header.keys():
                     encoding_recv = [
                         i.strip()
@@ -57,7 +59,7 @@ def handle_client(connection, address):
                     ]
                     resp = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
                     for item in encoding_recv:
-                        if item in supported_encodings:
+                        if item == "gzip":
                             resp = f"HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
                             break
                 else:
