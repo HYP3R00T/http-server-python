@@ -26,6 +26,8 @@ class Request:
                 parts = line.split(":", 1)
                 if parts[0] == "User-Agent":
                     self.header[parts[0]] = parts[1].strip()
+                if parts[0] == "Accept-Encoding".lower():
+                    self.header[parts[0]] = parts[1].strip()
 
         # Body
         self.body = lines[-1]
@@ -45,8 +47,12 @@ def handle_client(connection, address):
                 resp = "HTTP/1.1 200 OK\r\n\r\n"
 
             elif req.path.startswith("/echo/"):
-                arg = re_extract(req.path, r"/echo/(.*)")
-                resp = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
+                if req.header.get("Accept-Encoding".lower(), "") == "gzip":
+                    arg = re_extract(req.path, r"/echo/(.*)")
+                    resp = f"HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
+                elif req.header.get("Accept-Encoding", "") == "invalid-encoding":
+                    arg = re_extract(req.path, r"/echo/(.*)")
+                    resp = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
 
             elif req.path.startswith("/user-agent"):
                 arg = req.header.get("User-Agent", "")
