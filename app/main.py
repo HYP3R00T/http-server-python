@@ -11,8 +11,18 @@ def main():
     server_socket = socket.create_server(("localhost", 4221), reuse_port=True)
     connection, address = server_socket.accept()
     print(f"Accecpted connection from {address}")
+
     data = connection.recv(1024)
-    connection.sendall(b"HTTP/1.1 200 OK\r\n\r\n")
+    print(data.decode())
+    data_components = data.decode("utf-8").split(r"\r\n")
+    # [print(i) for i in data_components]
+
+    request_line = data_components[0]
+    path = request_line.split(" ")[1]
+    if path == "/":
+        connection.sendall(b"HTTP/1.1 200 OK\r\n\r\n")
+    else:
+        connection.sendall(b"HTTP/1.1 404 Not Found\r\n\r\n")
 
 
 if __name__ == "__main__":
