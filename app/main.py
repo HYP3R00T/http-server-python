@@ -19,14 +19,15 @@ class Request:
         self.method, self.path, self.version = request_line.split()
 
         # To find various header fields
-        self.headers = lines[1:]
+        self.headers = lines[1:-1]
         self.header = {}
         for line in self.headers:
             if line:
+                print(line)
                 parts = line.split(":", 1)
                 if parts[0] == "User-Agent":
                     self.header[parts[0]] = parts[1].strip()
-                if parts[0] == "Accept-Encoding".lower():
+                if parts[0] == "Accept-Encoding":
                     self.header[parts[0]] = parts[1].strip()
 
         # Body
@@ -35,7 +36,7 @@ class Request:
 
 def handle_client(connection, address):
     with connection:
-        print(f"Accecpted connection from {address}")
+        print(f"Accecpted connection from {address}\n")
         data = connection.recv(1024)
         print(data.decode())
         req = Request(data)
@@ -47,11 +48,12 @@ def handle_client(connection, address):
                 resp = "HTTP/1.1 200 OK\r\n\r\n"
 
             elif req.path.startswith("/echo/"):
-                if req.header.get("Accept-Encoding".lower(), "") == "gzip":
-                    arg = re_extract(req.path, r"/echo/(.*)")
+                arg = re_extract(req.path, r"/echo/(.*)")
+                print(arg)
+                print(req.header)
+                if req.header.get("Accept-Encoding", "") == "gzip":
                     resp = f"HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
                 elif req.header.get("Accept-Encoding", "") == "invalid-encoding":
-                    arg = re_extract(req.path, r"/echo/(.*)")
                     resp = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
 
             elif req.path.startswith("/user-agent"):
