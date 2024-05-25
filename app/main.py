@@ -43,7 +43,7 @@ def handle_client(connection, address):
         req = Request(data)
 
         try:
-            resp = ""
+            resp = "".encode()
 
             if req.path == "/":
                 resp = "HTTP/1.1 200 OK\r\n\r\n".encode()
@@ -97,7 +97,7 @@ def handle_client(connection, address):
                 raise Exception("Not Found")
 
         except Exception:
-            resp = "HTTP/1.1 404 Not Found\r\n\r\n"
+            resp = "HTTP/1.1 404 Not Found\r\n\r\n".encode()
 
         connection.sendall(resp)
 
