@@ -46,28 +46,29 @@ def handle_client(connection, address):
             resp = ""
 
             if req.path == "/":
-                resp = "HTTP/1.1 200 OK\r\n\r\n"
+                resp = "HTTP/1.1 200 OK\r\n\r\n".encode()
 
             elif req.path.startswith("/echo/"):
                 arg = re_extract(req.path, r"/echo/(.*)")
-                arg = gzip.compress(arg.encode())
 
                 if "Accept-Encoding" in req.header.keys():
                     encoding_recv = [
                         i.strip()
                         for i in req.header.get("Accept-Encoding", "").split(",")
                     ]
-                    resp = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
+                    resp = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}".encode()
                     for item in encoding_recv:
                         if item == "gzip":
-                            resp = f"HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
+                            arg = gzip.compress(arg.encode())
+                            resp = f"HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n"
+                            resp = resp.encode() + arg
                             break
                 else:
-                    resp = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
+                    resp = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}".encode()
 
             elif req.path.startswith("/user-agent"):
                 arg = req.header.get("User-Agent", "")
-                resp = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
+                resp = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}".encode()
 
             elif req.path.startswith("/files"):
                 directory = sys.argv[2]
@@ -77,7 +78,7 @@ def handle_client(connection, address):
                     try:
                         with open(f"{directory}/{file_name}", "r") as f:
                             body = f.read()
-                        resp = f"HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {len(body)}\r\n\r\n{body}"
+                        resp = f"HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {len(body)}\r\n\r\n{body}".encode()
 
                     except Exception:
                         raise Exception("Not Found")
@@ -87,7 +88,7 @@ def handle_client(connection, address):
                             print(req.body)
                             f.write(req.body)
 
-                        resp = f"HTTP/1.1 201 Created\r\nContent-Type: text/plain\r\nContent-Length: {len(req.body)}\r\n\r\n{req.body}"
+                        resp = f"HTTP/1.1 201 Created\r\nContent-Type: text/plain\r\nContent-Length: {len(req.body)}\r\n\r\n{req.body}".encode()
 
                     except Exception:
                         raise Exception("Not Found")
@@ -98,7 +99,7 @@ def handle_client(connection, address):
         except Exception:
             resp = "HTTP/1.1 404 Not Found\r\n\r\n"
 
-        connection.sendall(resp.encode())
+        connection.sendall(resp)
 
 
 def main():
