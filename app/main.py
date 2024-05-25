@@ -50,11 +50,15 @@ def handle_client(connection, address):
             elif req.path.startswith("/echo/"):
                 arg = re_extract(req.path, r"/echo/(.*)")
                 supported_encodings = ["gzip"]
-                if (
-                    "Accept-Encoding" in req.header.keys()
-                    and req.header.get("Accept-Encoding", "") in supported_encodings
-                ):
-                    resp = f"HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
+                if "Accept-Encoding" in req.header.keys():
+                    encoding_recv = [
+                        i.strip()
+                        for i in req.header.get("Accept-Encoding", "").split(",")
+                    ]
+                    for item in encoding_recv:
+                        if item in supported_encodings:
+                            resp = f"HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
+                            break
                 else:
                     resp = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
 
