@@ -1,37 +1,66 @@
 # Uncomment this to pass the first stage
 import socket
+from typing import ByteString
+import re
+
+
+def re_extract(s, pattern):
+    search = re.search(pattern, s)
+    if search:
+        return search.group(1)
+
+
+class Request:
+    def __init__(self, data: ByteString):
+        data_str = data.decode()
+        lines = data_str.split("\r\n")
+
+        request_line = lines[0]
+        self.method, self.path, self.version = request_line.split()
+
+        # To find various header fields
+        self.headers = lines[1:]
+        self.header = {}
+        for line in self.headers:
+            if line:
+                parts = line.split(":", 1)
+                if parts[0] == "User-Agent":
+                    self.header[parts[0]] = parts[1].strip()
 
 
 def main():
-    # You can use print statements as follows for debugging, they'll be visible when running tests.
-    print("Logs from your program will appear here!")
-
-    # Uncomment this to pass the first stage
-    #
+    print("Logs from your program will appear here!\n")
     server_socket = socket.create_server(("localhost", 4221), reuse_port=True)
-    connection, address = server_socket.accept()
-    print(f"Accecpted connection from {address}")
 
-    data = connection.recv(1024)
-    print(data.decode())
-    data_components = data.decode("utf-8").split(r"\r\n")
-    # [print(i) for i in data_components]
+    while True:
+        try:
+            connection, address = server_socket.accept()
 
-    request_line = data_components[0]
-    path = request_line.split(" ")[1]
-    if path == "/":
-        connection.sendall(b"HTTP/1.1 200 OK\r\n\r\n")
-    if path.startswith("/echo/"):
-        string_val = path.split("/")[-1]
-        connection.sendall(
-            (
-                f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(string_val)}\r\n\r\n{string_val}".encode(
-                    "utf-8"
-                )
-            )
-        )
-    else:
-        connection.sendall(b"HTTP/1.1 404 Not Found\r\n\r\n")
+            with connection:
+                print(f"Accecpted connection from {address}")
+                data = connection.recv(1024)
+                print(data.decode())
+                req = Request(data)
+
+                try:
+                    resp = ""
+                    if req.path == "/":
+                        resp = "HTTP/1.1 200 OK\r\n\r\n"
+                    elif req.path.startswith("/echo/"):
+                        arg = re_extract(req.path, r"/echo/(.*)")
+                        resp = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
+                    elif req.path.startswith("/user-agent"):
+                        arg = req.header.get("User-Agent", "")
+                        resp = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(arg)}\r\n\r\n{arg}"
+                    else:
+                        raise Exception("Not Found")
+                except Exception:
+                    resp = "HTTP/1.1 404 Not Found\r\n\r\n"
+
+                connection.sendall(resp.encode())
+
+        except Exception as e:
+            print(f"Exception: {e}")
 
 
 if __name__ == "__main__":
